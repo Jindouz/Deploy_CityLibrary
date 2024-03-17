@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night City Library - Loans</title>
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon2.png">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        .navbar {
+            background-image: url('assets/icons/navbar.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 110px;
+        }
+
+        .navbar-brand img {
+            margin-right: 10px;
+        }
+
+        .card {
+            margin-top: 10px;
+        }
+
+        body.modal-open {
+            overflow: auto !important;
+            padding-right: 12px !important;
+
+        }
+
+        .overdue-loan {
+            background-color: #e04b4b !important;
+            /* Light red background */
+            color: #ffffff !important;
+            /* Red text color */
+            /* Add any other styles for overdue loans */
+        }
+        .loan-table th,
+        .loan-table td {
+            border-right: 1px solid #5c5c5c !important;
+            border-left: 1px solid #5c5c5c !important;
+            border-top: 1px solid #5c5c5c !important;
+        }
+    </style>
+</head>
+
+<body class="container">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="menu.html" style="color: white;">
+                <img src="assets/icons/home2.jpg" alt="Library Logo" width="12%" class="d-inline-block align-text-top">
+                <span class="ms-2" style="font-size: 35px; font-weight: 500;">Night City Library</span>
+            </a>
+
+            <!-- Navbar Toggler (for smaller screens) -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon" style="font-size: 70%;"></span>
+            </button>
+
+            <!-- Navbar Items -->
+            <div class="collapse navbar-collapse" id="navbarNav" style="background-color: #000933; padding: 10px;">
+                <ul class="navbar-nav ms-auto">
+                    <div style="white-space: nowrap;">
+                        <h5 style="margin-right: 20px; display: inline-block;">Logged in as <span
+                                id="displayusername"></span></h5>
+                    </div>
+                    <li class="nav-item">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="text-center">
+        <div class="mt-3" style="display: flex; justify-content: space-between;">
+            <h3>Welcome <span id="displayname"></span>!</h3>
+            <div id="adminButtons" style="margin-right: 10px;"></div>
+        </div>
+    </div>
+
+    <h3 class="mt-4" style="text-align: center;">Loan Manager</h3>
+    </div>
+
+
+    <br>
+
+    <div class="row justify-content-center">
+        <div class="card col-md-5">
+            <div class="card-header">
+                <h3>Loan a Book</h3>
+            </div>
+            <div class="card-body">
+                <form id="loanForm">
+                    <div class="mb-3">
+                        <label for="customerName" class="form-label">Customer Name:</label>
+                        <select id="customerName" name="customerName" class="form-select" required>
+                            <!-- Options for customer names will be dynamically populated here -->
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="bookName" class="form-label">Book Name:</label>
+                        <select id="bookName" name="bookName" class="form-select" required>
+                            <!-- Options for book names will be dynamically populated here -->
+                        </select>
+                    </div>
+
+
+                    <button type="button" onclick="loanBook()" class="btn btn-primary">Loan Book</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="card col-md-10 mx-auto">
+            <div class="card-header">
+                <h3>Current Loans</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped table-responsive loan-table">
+                    <thead>
+                        <tr>
+                            <th>Customer Name</th>
+                            <th>Book Name</th>
+                            <th>Loan Date</th>
+                            <th>Return Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loanTableBody">
+                        <!-- Loan data will be displayed here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Loan Modal -->
+    <div class="modal fade" id="editLoanModal" data-bs-backdrop="static" tabindex="-1" aria-labelledby="editLoanModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editLoanModalLabel">Edit Loan (Loan ID: <span
+                        id=editMsg></span>)</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editLoanForm">
+                        <input type="hidden" id="editLoanID" name="editLoanID">
+                        <div class="mb-3">
+                            <label for="editCustomerName" class="form-label">Customer Name:</label>
+                            <select id="editCustomerName" name="editCustomerName" class="form-select" required>
+                                <!-- Options for customer names will be dynamically populated here -->
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editBookName" class="form-label">Book Name:</label>
+                            <select id="editBookName" name="editBookName" class="form-select" required>
+                                <!-- Options for book names will be dynamically populated here -->
+                            </select>
+                        </div>
+
+                        <button type="button" onclick="updateLoan()" class="btn btn-primary">Update Loan</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this loan?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+<script>
+
+    MY_SERVER = "https://deploy-citylibrary.onrender.com"
+
+    // Global variable to store the edit loan modal
+    let editLoanModal = 0;
+
+
+    // Fetch and display customers in the dropdowns (using async/await)
+    function getCustomers(dropdownId) {
+        return new Promise((resolve, reject) => {
+            const accessToken = sessionStorage.getItem('access_token');
+            axios.get(`${MY_SERVER}/customers`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    const customers = response.data.customers;
+                    const customerDropdown = document.getElementById(dropdownId);
+                    customerDropdown.innerHTML = '';
+                    customers.forEach(function (customer) {
+                        const option = document.createElement('option');
+                        option.value = customer.Id;
+                        option.text = `${customer.Name} (${customer.Username}) - City: ${customer.City} - Age: ${customer.Age}`;
+                        customerDropdown.add(option);
+                    });
+                    resolve();
+                })
+                .catch(error => {
+                    console.error('Error fetching customers:', error);
+                    reject(error);
+                });
+        });
+    }
+
+    // Fetch and display books in the dropdowns (using async/await)
+    function getBooks(dropdownId) {
+        return new Promise((resolve, reject) => {
+            const accessToken = sessionStorage.getItem('access_token');
+            axios.get(`${MY_SERVER}/books`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    const books = response.data.books;
+                    const bookDropdown = document.getElementById(dropdownId);
+                    bookDropdown.innerHTML = '';
+                    books.forEach(book => {
+                        let bookType = 0;
+                        if (book.Type == 1) {
+                            bookType = 10;
+                        } else if (book.Type == 2) {
+                            bookType = 5;
+                        } else if (book.Type == 3) {
+                            bookType = 2;
+                        }
+                        const option = document.createElement('option');
+                        option.value = book.Id;
+                        option.text = `${book.Name} by ${book.Author} (${book.YearPublished}) - Loan Duration: ${bookType} Days`;
+                        option.title = `Can be loaned for ${bookType} Days`;
+                        bookDropdown.add(option);
+                    });
+                    resolve();
+                })
+                .catch(error => {
+                    console.error('Error fetching books:', error);
+                    reject(error);
+                });
+        });
+    }
+
+    getCustomers('customerName');
+    getBooks('bookName');
+
+
+    function getLoans() {
+        const accessToken = sessionStorage.getItem('access_token');
+        axios.get(`${MY_SERVER}/loans`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+            .then(response => {
+                const loans = response.data.loans;
+                loans.sort((a, b) => b.Id - a.Id);
+                const loanTableBody = document.getElementById('loanTableBody');
+                loanTableBody.innerHTML = '';
+
+                loans.forEach(loan => {
+                    const row = loanTableBody.insertRow();
+
+                    // Convert Return Date to a Date object
+                    const loanDate = new Date(loan.Loandate);
+                    const returnDate = new Date(loan.Returndate);
+                    // console.log(loanDate);
+                    // console.log(returnDate);
+                    const IL_loanDate = formatDate(loan.Loandate);
+                    const IL_returnDate = formatDate(loan.Returndate);
+
+
+                    // Check if the loan is overdue
+                    if (returnDate < new Date()) {
+                        row.classList.add('overdue-loan');
+                        // Apply a CSS class for overdue loans
+                        row.innerHTML = `
+                            <td class="overdue-loan">${loan.customerName} (${loan.userName})</td>
+                            <td class="overdue-loan">${loan.bookName}</td>
+                            <td class="overdue-loan">${IL_loanDate}</td>
+                            <td class="overdue-loan">${IL_returnDate} LATE</td>
+                            <td style="text-align: center;">
+                                <button class="btn btn-danger btn-sm" onclick="deleteLoan(${loan.Id})">Delete</button>
+                                <button class="btn btn-warning btn-sm" onclick="editLoan(${loan.Id})">Edit</button>
+                            </td>
+                        `;
+                    } else {
+                        // If not overdue, add the row without the overdue-loan class
+                        row.innerHTML = `
+                            <td>${loan.customerName} (${loan.userName})</td>
+                            <td>${loan.bookName}</td>
+                            <td>${IL_loanDate}</td>
+                            <td>${IL_returnDate}</td>
+                            <td style="text-align: center;">
+                                <button class="btn btn-danger btn-sm" onclick="deleteLoan(${loan.Id})">Delete</button>
+                                <button class="btn btn-warning btn-sm" onclick="editLoan(${loan.Id})">Edit</button>
+                            </td>
+                        `;
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching loans:', error);
+            });
+    }
+
+    getLoans();
+
+    // Function to change the date format from YYYY-MM-DD to DD-MM-YYYY
+    function formatDate(dateString) {
+        const [year, month, day] = dateString.split('-');
+        return `${day}-${month}-${year}`;
+    }
+
+    // function to add a loan
+    function loanBook() {
+        event.preventDefault();
+
+        // Retrieve the selected values from dropdowns
+        const Customer_ID = document.getElementById('customerName').value;
+        const Book_ID = document.getElementById('bookName').value;
+
+        // Retrieve the access token from session storage
+        const accessToken = sessionStorage.getItem('access_token');
+
+        // Make a POST request to the server to create a loan
+        axios.post(`${MY_SERVER}/loans`, { BookID: Book_ID, CustomerID: Customer_ID }, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+            .then(response => {
+
+                getLoans(); // Refresh the list of loans
+                toastifyMessages('Loan added successfully.', "linear-gradient(to right, #00b09b, #96c93d)", 7000);
+                console.log('Loan added successfully:', response.data);
+            })
+            .catch(error => {
+                if (error.response.status === 409 && error.response.data.message === 'A loan for this book already exists') {
+                    toastifyMessages('A loan for this book already exists.', "linear-gradient(to right, #ff4b2b, #ff416c)", 7000);
+                }
+                else {
+                    console.error('Error adding loan:', error);
+                }
+            });
+
+    }
+
+
+    // Function to setup an edit for a loan
+    function editLoan(loanId) {
+        const accessToken = sessionStorage.getItem('access_token');
+        axios.get(`${MY_SERVER}/loans/${loanId}`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+            .then(response => {
+                const loan = response.data.loan;
+
+                // Populate the modal form fields with loan ID
+                document.getElementById('editLoanID').value = loanId;
+
+                // Wait for both getCustomers and getBooks to complete before setting the dropdowns (async waiting)
+                return Promise.all([
+                    getCustomers('editCustomerName'),
+                    getBooks('editBookName')
+                ]).then(() => {
+                    // Set default values for the dropdowns based on the loan ID
+                    document.getElementById('editCustomerName').value = loan.CustomerID;
+                    document.getElementById('editBookName').value = loan.BookID;
+
+                    // Show the loan ID in editMsg
+                    document.getElementById('editMsg').innerText = loanId;
+
+                    // Show the edit loan modal
+                    editLoanModal = new bootstrap.Modal(document.getElementById('editLoanModal'));
+                    editLoanModal.show();
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching loan:', error);
+            });
+    }
+
+
+
+    // Function to update (PUT) a loan
+    function updateLoan() {
+        const accessToken = sessionStorage.getItem('access_token');
+        const loanId = document.getElementById('editLoanID').value;
+        const customerId = document.getElementById('editCustomerName').value;
+        const bookId = document.getElementById('editBookName').value;
+
+        // Prepare the data for the PUT request
+        const data = {
+            CustomerID: customerId,
+            BookID: bookId
+            // Add other fields as needed
+        };
+
+        // Perform the PUT request to update the loan
+        axios.put(`${MY_SERVER}/loans/${loanId}`, data, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+            .then(response => {
+                getLoans(); // Refresh the list of loans
+                toastifyMessages('Loan updated successfully.', "linear-gradient(to right, #00b09b, #96c93d)", 7000);
+                console.log('Loan updated successfully:', response.data);
+
+                if (editLoanModal) {
+                    editLoanModal.hide();
+                }
+                // Refresh the loan list
+                getLoans();
+            })
+            .catch(error => {
+                if (error.response.status === 409 && error.response.data.message === 'A loan for this book already exists') {
+                    toastifyMessages('A loan for this book already exists.', "linear-gradient(to right, #ff4b2b, #ff416c)", 7000);
+                }
+                else {
+                    console.error('Error adding loan:', error);
+                }
+            });
+    }
+
+
+    // Function to delete a loan
+    function deleteLoan(loanId) {
+        // Display a delete confirmation dialog
+        const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+        confirmationModal.show();
+        function confirmDelete() {
+            const accessToken = sessionStorage.getItem('access_token');
+            axios.delete(`${MY_SERVER}/loans/${loanId}`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    toastifyMessages('Loan deleted successfully.', "linear-gradient(to right, #e8a400, #ffc257)", 7000);
+                    console.log('Loan deleted successfully:', response.data);
+                    getLoans();
+                })
+                .catch(error => {
+                    console.error('Error deleting loan:', error);
+                });
+            confirmationModal.hide();
+        };
+        document.getElementById('confirmDelete').onclick = confirmDelete;
+    }
+
+    function logout() {
+        sessionStorage.removeItem('access_token');
+        window.location.href = 'login.html?logout=true';
+    }
+
+    // Function to display Toastify messages
+    function toastifyMessages(toastText, toastColor, toastDuration) {
+        Toastify({
+                        text: toastText,
+                        gravity: "top",
+                        position: "center",
+                        duration: toastDuration,
+                        style: {
+                            background: toastColor
+                        },
+                    }).showToast();
+    }
+
+    // Function to get the current user to check for login, welcome message, and deny access if not admin
+    function getCurrentUser() {
+        const accessToken = sessionStorage.getItem('access_token');
+        if (!accessToken) {
+            // Redirect to login.html if not logged in
+            window.location.href = 'login.html?loginMessage=true';
+        }
+
+        axios.get(`${MY_SERVER}/user`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        })
+            .then(response => {
+                document.getElementById('displayname').innerHTML = response.data.Name;
+                if (response.data.is_admin == true) {
+                    document.getElementById('displayusername').innerHTML = "Admin " + response.data.Username;
+
+                    const adminButton = document.createElement('a');
+                    adminButton.href = 'menu.html';
+                    adminButton.className = 'btn btn-success btn-sm';
+                    adminButton.innerHTML = 'Admin Menu';
+
+                    adminButtons.appendChild(adminButton);
+                }
+                else {
+                    window.location.href = 'index.html?denied=true';
+                }
+            })
+            .catch(error => {
+                // If the request returns a 401, redirect to login.html
+                if (error.response && error.response.status === 401) {
+                    window.location.href = 'login.html?loginMessage=true';
+                } else {
+                    console.error('Error checking login status:', error);
+                }
+            });
+    }
+
+    getCurrentUser()
+
+</script>
+
+</html>

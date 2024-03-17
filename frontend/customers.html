@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night City Library</title>
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon2.png">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <style>
+        .navbar {
+            background-image: url('assets/icons/navbar.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 110px;
+        }
+
+        .navbar-brand img {
+            margin-right: 10px;
+        }
+
+        .card {
+            margin-top: 10px;
+        }
+
+        body.modal-open {
+            overflow: auto !important;
+            padding-right: 12px !important;
+
+        }
+    </style>
+</head>
+
+<body class="container">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="menu.html" style="color: white;">
+                <img src="assets/icons/home2.jpg" alt="Library Logo" width="12%" class="d-inline-block align-text-top">
+                <span class="ms-2" style="font-size: 35px; font-weight: 500;">Night City Library</span>
+            </a>
+
+            <!-- Navbar Toggler (for smaller screens) -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon" style="font-size: 70%;"></span>
+            </button>
+
+            <!-- Navbar Items -->
+            <div class="collapse navbar-collapse" id="navbarNav" style="background-color: #000933; padding: 10px;">
+                <ul class="navbar-nav ms-auto">
+                    <div style="white-space: nowrap;">
+                        <h5 style="margin-right: 20px; display: inline-block;">Logged in as <span
+                                id="displayusername"></span></h5>
+                    </div>
+                    <li class="nav-item">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="text-center">
+        <div class="mt-3" style="display: flex; justify-content: space-between;">
+            <h3>Welcome <span id="displayname"></span>!</h3>
+            <div id="adminButtons" style="margin-right: 10px;"></div>
+        </div>
+    </div>
+
+    <h3 class="mt-4" style="text-align: center;">Customer Manager</h3>
+    </div>
+
+
+    <br>
+
+    <div class="row justify-content-center">
+        <div class="card col-md-5">
+            <div class="card-header">
+                <h3>Register a new Customer</h3>
+            </div>
+            <div class="card-body">
+                <form id="registerForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username:</label>
+                        <input type="text" id="username" name="username" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password:</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label">Confirm Password:</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" class="form-control"
+                            required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Name" class="form-label">Name:</label>
+                        <input type="text" id="Name" name="Name" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="City" class="form-label">City:</label>
+                        <input type="text" id="City" name="City" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="Age" class="form-label">Age:</label>
+                        <input type="text" id="Age" name="Age" class="form-control" required>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" onclick="register()">Register</button>
+                    <button type="button" class="btn btn-warning" onclick="clearRegFields()">Clear
+                        Fields</button>
+                </form>
+            </div>
+        </div>
+
+
+
+        <!-- Customer List -->
+        <div class="card col-md-5">
+            <div class="card-header">
+                <h3>Customer List</h3>
+            </div>
+            <div class="col-md-11 mt-3 mx-auto">
+                <label for="searchCustomer" class="form-label">Search Customer by Name:</label>
+                <input type="text" id="searchCustomer" class="form-control" oninput="searchCustomers()">
+            </div>
+            <div class="card-body" id="customersDisplay"></div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Deleting this customer will also delete the associated user account and his loans. Are you sure?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editCustomerModal" data-bs-backdrop="static" tabindex="-1"
+        aria-labelledby="editCustomerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="editCustomerModalLabel">Edit Customer (Username: <span
+                            id="customerUsername"></span>)</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="saveEditedCustomer">
+                        <div class="mb-3">
+                            <label for="customerName" class="form-label">Customer Name:</label>
+                            <input type="text" id="customerName" name="customerName" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customerCity" class="form-label">Customer City:</label>
+                            <input type="City" id="customerCity" name="customerCity" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="customerAge" class="form-label">Customer Age:</label>
+                            <input type="tel" id="customerAge" name="customerAge" class="form-control" required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="saveEditedCustomer()">Save Edited
+                                Customer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        MY_SERVER = "https://deploy-citylibrary.onrender.com";
+
+        // Global variable to store the selected customer ID (mainly for editing)
+        let selectedCustomerId = 0;
+        // Global variable for the edit customer modal
+        const editCustomerModal = new bootstrap.Modal(document.getElementById('editCustomerModal'));
+
+        // GET all customers
+        function fetchCustomers(searchQuery) {
+            const accessToken = sessionStorage.getItem('access_token');
+
+            let apiUrl = `${MY_SERVER}/customers`;
+
+            if (searchQuery) {
+                apiUrl += `?search=${searchQuery}`;
+            }
+
+            axios.get(apiUrl, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    const responseData = response.data;
+
+                    const customers = responseData && responseData.customers ? responseData.customers : [];
+
+                    // Sort customers by Id in descending order (newest at the top)
+                    customers.sort((a, b) => b.Id - a.Id);
+                    const customersDiv = document.getElementById('customersDisplay');
+
+                    customersDiv.innerHTML = '';
+
+                    customers.forEach(function (customer) {
+                        // Create a Bootstrap card
+                        const card = document.createElement('div');
+                        card.className = 'card mb-3';
+
+                        // Card body
+                        const cardBody = document.createElement('div');
+                        cardBody.className = 'card-body';
+
+                        // Customer info
+                        const customerInfo = document.createElement('p');
+                        customerInfo.className = 'card-text';
+
+                        if (customer.is_admin == true) {
+                            customerInfo.innerHTML = `<strong>Name:</strong> ${customer.Name}, <strong>City:</strong> ${customer.City}, <strong>Age:</strong> ${customer.Age}<br><strong>Username:</strong> ${customer.Username}, <strong>Admin Account</strong>`;
+
+                        } else {
+                            customerInfo.innerHTML = `<strong>Name:</strong> ${customer.Name}, <strong>City:</strong> ${customer.City}, <strong>Age:</strong> ${customer.Age}<br><strong>Username:</strong> ${customer.Username || 'N/A'}`;
+                            // I could also move the delete or edit button here to prevent admin users from deleting or editing other admin accounts
+                        }
+
+                        // Buttons container
+                        const buttonsContainer = document.createElement('div');
+                        buttonsContainer.className = 'd-flex justify-content-end';
+
+                        // delete button
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.className = 'btn btn-danger btn-sm me-2';
+                        deleteButton.onclick = function () {
+                            deleteCustomer(customer.Id);
+                        };
+                        buttonsContainer.appendChild(deleteButton);
+
+                        // edit button
+                        const editButton = document.createElement('button');
+                        editButton.textContent = 'Edit';
+                        editButton.className = 'btn btn-warning btn-sm';
+                        editButton.onclick = function () {
+                            editCustomerFields(customer);
+                        };
+                        buttonsContainer.appendChild(editButton);
+
+                        // Append elements
+                        cardBody.appendChild(customerInfo);
+                        cardBody.appendChild(buttonsContainer);
+                        card.appendChild(cardBody);
+
+                        // Append card to the customersDiv
+                        customersDiv.appendChild(card);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching customers:', error);
+                });
+        }
+
+        function searchCustomers() {
+            const searchQuery = document.getElementById('searchCustomer').value.trim();
+            fetchCustomers(searchQuery);
+        }
+
+
+        // Register a new user and customer
+        function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const Name = document.getElementById('Name').value;
+            const City = document.getElementById('City').value;
+            const Age = document.getElementById('Age').value;
+
+            if (!username || !password || !confirmPassword || !Name || !City || !Age) {
+                // Empty fields, show error message
+                toastifyMessages('Please fill in all the required fields.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                return;
+            }
+
+            if (Age) {
+                // Check if Age is a number
+                if (isNaN(Age)) {
+                    toastifyMessages('Age must be an number.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                }
+            }
+
+            if (password !== confirmPassword) {
+                // Passwords don't match, show error message
+                toastifyMessages('Passwords do not match. Please try again.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                return;
+            }
+            axios.post(`${MY_SERVER}/register`, { Username: username, Password: password, Name: Name, City: City, Age: Age })
+                .then(response => {
+                    toastifyMessages('Customer added successfully.', "linear-gradient(to right, #00b09b, #96c93d)", 7000);
+                    console.log('Customer added successfully:', response.data);
+                    // Reload customers after adding a new one
+                    fetchCustomers();
+                    clearRegFields();
+                })
+                .catch(error => {
+                    console.error('Registration error:', error);
+
+                    if (error.response.status === 400 && error.response.data.message === 'Username already taken') {
+                        // Username is already taken, show error message
+                        toastifyMessages('That username is already taken. Please select a different one.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                    } else {
+                        // Use Toastify for error message
+                        toastifyMessages('Registration failed. Please try again.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                    }
+                });
+        }
+
+        // Function to handle the Edit Customer button
+        function saveEditedCustomer() {
+            const customerName = document.getElementById('customerName').value;
+            const customerCity = document.getElementById('customerCity').value;
+            const customerAge = document.getElementById('customerAge').value;
+            const accessToken = sessionStorage.getItem('access_token');
+
+
+
+            if (!customerName || !customerCity || !customerAge) {
+                // Empty fields, show error message
+                toastifyMessages('Please fill in all the required fields.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                return;
+            }
+
+            if (!selectedCustomerId) {
+                // No customer selected for editing, show error message
+                toastifyMessages('Please select a customer to edit.', 'linear-gradient(to right, #ff4b2b, #ff416c)', 5000);
+                return;
+            }
+
+            if (customerAge) {
+                // Check if customerAge is a number
+                if (isNaN(customerAge)) {
+                    toastifyMessages('Age must be an number.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                }
+            }
+
+            // Use the selectedCustomerId when sending the request
+            axios.put(`${MY_SERVER}/customers/${selectedCustomerId}`, {
+                Name: customerName,
+                City: customerCity,
+                Age: customerAge
+            }, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    editCustomerModal.hide();
+                    toastifyMessages('Customer updated successfully.', "linear-gradient(to right, #00b09b, #96c93d)", 7000);
+                    console.log('Customer updated successfully:', response.data);
+                    // Reload the customers after editing
+                    fetchCustomers();
+                })
+                .catch(error => {
+                    console.error('Error updating customer:', error);
+                });
+        }
+
+        // Function to populate form fields for editing
+        function editCustomerFields(customer) {
+            editCustomerModal.show();
+            selectedCustomerId = customer.Id;
+            document.getElementById('customerName').value = customer.Name;
+            document.getElementById('customerCity').value = customer.City;
+            document.getElementById('customerAge').value = customer.Age;
+            document.getElementById('customerUsername').innerHTML = customer.Username || 'N/A';
+        }
+
+        // Function to clear form fields
+        function clearRegFields() {
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('Name').value = '';
+            document.getElementById('City').value = '';
+            document.getElementById('Age').value = '';
+        }
+
+        // Function to delete a customer and related user including loans
+        function deleteCustomer(customerId) {
+            // Display a delete confirmation dialog
+            const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            confirmationModal.show();
+
+            function confirmDelete() {
+                const accessToken = sessionStorage.getItem('access_token');
+                axios.delete(`${MY_SERVER}/customers/${customerId}`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                })
+                    .then(response => {
+                        toastifyMessages('Customer and User deleted successfully.', "linear-gradient(to right, #e8a400, #ffc257)", 7000);
+                        console.log('Customer and User deleted successfully:', response.data);
+                        // Reload the customers after deleting
+                        fetchCustomers();
+                    })
+                    .catch(error => {
+                        console.error('Error deleting customer and user:', error);
+                    });
+
+                confirmationModal.hide();
+            };
+            document.getElementById('confirmDelete').onclick = confirmDelete;
+        }
+
+        fetchCustomers();
+
+        function logout() {
+            sessionStorage.removeItem('access_token');
+            window.location.href = 'login.html?logout=true';
+        }
+
+        function toastifyMessages(toastText, toastColor, toastDuration) {
+            Toastify({
+                text: toastText,
+                gravity: "top",
+                position: "center",
+                duration: toastDuration,
+                style: {
+                    background: toastColor
+                },
+            }).showToast();
+        }
+
+        // Function to get the current user to check for login, welcome message, and deny access if not admin
+        function getCurrentUser() {
+            const accessToken = sessionStorage.getItem('access_token');
+            if (!accessToken) {
+                // Redirect to login.html if not logged in
+                window.location.href = 'login.html?loginMessage=true';
+            }
+            axios.get(`${MY_SERVER}/user`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    document.getElementById('displayname').innerHTML = response.data.Name;
+                    // Check if the user is an admin
+                    if (response.data.is_admin == true) {
+                        document.getElementById('displayusername').innerHTML = "Admin " + response.data.Username;
+
+                        const adminButton = document.createElement('a');
+                        adminButton.href = 'menu.html';
+                        adminButton.className = 'btn btn-success btn-sm';
+                        adminButton.innerHTML = 'Admin Menu';
+
+                        adminButtons.appendChild(adminButton);
+                    }
+                    else {
+                        window.location.href = 'index.html?denied=true';
+                    }
+                })
+                .catch(error => {
+                    // If the request returns a 401, redirect to login.html
+                    if (error.response && error.response.status === 401) {
+                        window.location.href = 'login.html?loginMessage=true';
+                    } else {
+                        console.error('Error checking login status:', error);
+                    }
+                });
+
+        }
+
+        getCurrentUser()
+
+    </script>
+</body>
+
+</html>

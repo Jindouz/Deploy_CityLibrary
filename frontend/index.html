@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night City Library</title>
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon2.png">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .navbar {
+            background-image: url('assets/icons/navbar.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 110px;
+        }
+
+        .navbar-brand img {
+            margin-right: 10px;
+        }
+
+        .card {
+            margin-top: 10px;
+        }
+
+        .overdue-loan {
+            background-color: #e04b4b !important;
+            /* Light red background */
+            color: #ffffff !important;
+            /* Red text color */
+            /* Add any other styles for overdue loans */
+        }
+
+        .available-loan {
+            background-color: #4b9b4b !important;
+            text-align: center !important;
+        }
+
+        .unavailable-loan {
+            background-color: #9b4b4b !important;
+            text-align: center !important;
+        }
+
+        .loan-table th,
+        .loan-table td {
+            border-right: 1px solid #5c5c5c !important;
+            border-left: 1px solid #5c5c5c !important;
+            border-top: 1px solid #5c5c5c !important;
+        }
+
+        .zoomable-image {
+            transition: transform 0.3s;
+        }
+
+        .zoomable-image:hover {
+            transform: scale(4.1);
+        }
+    </style>
+</head>
+
+<body class="container">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="index.html" style="color: white;">
+                <img src="assets/icons/home2.jpg" alt="Library Logo" width="12%" class="d-inline-block align-text-top">
+                <span class="ms-2" style="font-size: 35px; font-weight: 500;">Night City Library</span>
+            </a>
+
+            <!-- Navbar Toggler (for smaller screens) -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon" style="font-size: 70%;"></span>
+            </button>
+
+            <!-- Navbar Items -->
+            <div class="collapse navbar-collapse" id="navbarNav" style="background-color: #000933; padding: 10px;">
+                <ul class="navbar-nav ms-auto">
+                    <div style="white-space: nowrap;">
+                        <h5 style="margin-right: 20px; display: inline-block;">Logged in as <span
+                                id="displayusername"></span></h5>
+                    </div>
+                    <li class="nav-item">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+
+    <div class="text-center">
+        <div class="mt-3" style="display: flex;">
+            <div id="adminButtons" style="margin-right: 10px; margin-left: auto;"></div>
+        </div>
+    </div>
+
+    <h3 class="mt-4" style="text-align: center;">Welcome <span id="displayname"></span>!</h3>
+
+    <div class="row mt-4">
+        <div class="card col-md-8 mx-auto">
+            <div class="card-header">
+                <h3>Your Current Loans</h3>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped table-responsive loan-table">
+                    <thead>
+                        <tr>
+                            <th> </th>
+                            <th>Book Name</th>
+                            <th>Loan Date</th>
+                            <th>Return Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loanTableBody">
+                        <!-- Loan data will be displayed here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <br>
+
+    <div class="row mt-4">
+        <div class="card col-md-8 mx-auto">
+            <div class="card-header">
+                <h3>Available Books</h3>
+            </div>
+            <div class="col-md-11 mt-3 mx-auto">
+                <label for="searchBook" class="form-label">Search Book by Name:</label>
+                <input type="text" id="searchBook" class="form-control" oninput="searchBooks()">
+            </div>
+            <div class="card-body">
+                <table class="table table-striped table-responsive loan-table">
+                    <thead>
+                        <tr>
+                            <th> </th>
+                            <th>Book Name</th>
+                            <th>Loan Duration</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="booksDisplay">
+                        <!-- Book data will be displayed here dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+
+        MY_SERVER = "https://deploy-citylibrary.onrender.com"
+
+
+        function getBooks(searchQuery) {
+            const accessToken = sessionStorage.getItem('access_token');
+            let apiUrl = `${MY_SERVER}/books`;
+
+            if (searchQuery) {
+                apiUrl += `?search=${searchQuery}`;
+            }
+
+            axios.get(apiUrl, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+
+                    const books = response.data.books;
+                    books.sort((a, b) => b.Id - a.Id);
+
+                    const booksDiv = document.getElementById('booksDisplay');
+                    // Nested axios call to get loans data for status availability in the Available Books section
+                    axios.get(`${MY_SERVER}/loans`, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    })
+                        .then(loansResponse => {
+                            const loans = loansResponse.data.loans;
+
+                            booksDiv.innerHTML = '';
+                            books.forEach(book => {
+                                let bookType = 0;
+                                if (book.Type == 1) {
+                                    bookType = 10;
+                                } else if (book.Type == 2) {
+                                    bookType = 5;
+                                } else if (book.Type == 3) {
+                                    bookType = 2;
+                                }
+                                // Check if the book is in the current loans using the loans data
+                                const isBookLoaned = loans.some(loan => loan.BookID === book.Id);
+                                const row = booksDiv.insertRow();
+                                if (book.img_path == null) {
+                                    book.img_path = 'frontend/assets/icons/default_book.jpg';
+                                }
+                                if (isBookLoaned) {
+                                    row.innerHTML = `
+                                <td><img src="${MY_SERVER}/${book.img_path}" class="zoomable-image" style="width: 40px; height: 55px;"></td>
+                                <td><strong>${book.Name}</strong> by ${book.Author} (${book.YearPublished})</td>
+                                <td>${bookType} Days</td>
+                                <th class="unavailable-loan">Loaned</th>
+                                <td>
+                                    <button class="btn btn-secondary btn-sm" onclick="loanBook(${book.Id})">Loan</button>
+                                </td>
+                                `;
+                                }
+                                else {
+                                    row.innerHTML = `
+                                <td><img src="${MY_SERVER}/${book.img_path}" class="zoomable-image" style="width: 40px; height: 55px;"></td>
+                                <td><strong>${book.Name}</strong> by ${book.Author} (${book.YearPublished})</td>
+                                <td>${bookType} Days</td>
+                                <th class="available-loan">Available</th>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" onclick="loanBook(${book.Id})">Loan</button>
+                                </td>
+                                `;
+                                }
+                            });
+                        })
+                        .catch(loansError => {
+                            console.error('Error fetching loans:', loansError);
+                        });
+                })
+                .catch(error => {
+                    console.error('Error fetching books:', error);
+                });
+        }
+
+        getBooks()
+
+        function searchBooks() {
+            const searchQuery = document.getElementById('searchBook').value.trim();
+            getBooks(searchQuery);
+        }
+
+        function getLoans() {
+            const accessToken = sessionStorage.getItem('access_token');
+            axios.get(`${MY_SERVER}/user/loans`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    const loans = response.data.loans;
+                    loans.sort((a, b) => b.Id - a.Id);
+                    const loanTableBody = document.getElementById('loanTableBody');
+                    loanTableBody.innerHTML = ''; // Clear existing data
+
+                    loans.forEach(loan => {
+                        const row = loanTableBody.insertRow();
+
+                        if (loan.img_path == null) {
+                            loan.img_path = 'frontend/assets/icons/default_book.jpg';
+                        }
+
+                        // Convert Return Date to a Date object
+                        const loanDate = new Date(loan.Loandate);
+                        const returnDate = new Date(loan.Returndate);
+                        // console.log(loanDate);
+                        // console.log(returnDate);
+                        const IL_loanDate = formatDate(loan.Loandate);
+                        const IL_returnDate = formatDate(loan.Returndate);
+
+                        // Check if the loan is overdue
+                        if (returnDate < new Date()) {
+                            row.classList.add('overdue-loan');
+                            // Apply a CSS class for overdue loans
+                            row.innerHTML = `
+                        <td><img src="${MY_SERVER}/${loan.img_path}" class="zoomable-image" style="width: 40px; height: 55px;"></td>
+                        <td class="overdue-loan">${loan.bookName}</td>
+                        <td class="overdue-loan">${IL_loanDate}</td>
+                        <td class="overdue-loan">${IL_returnDate} LATE</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="returnLoan(${loan.Id})">Return</button>
+                        </td>
+                        `;
+                        } else {
+                            // If not overdue, add the row without the overdue-loan class
+                            row.innerHTML = `
+                        <td><img src="${MY_SERVER}/${loan.img_path}" class="zoomable-image" style="width: 40px; height: 55px;"></td>
+                        <td>${loan.bookName}</td>
+                        <td>${IL_loanDate}</td>
+                        <td>${IL_returnDate}</td>
+                        <td>
+                            <button class="btn btn-danger btn-sm" onclick="returnLoan(${loan.Id})">Return</button>
+                        </td>
+                        `;
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching loans:', error);
+                });
+        }
+
+        getLoans();
+
+        function formatDate(dateString) {
+            const [year, month, day] = dateString.split('-');
+            return `${day}-${month}-${year}`;
+        }
+
+        function loanBook(bookId) {
+            const accessToken = sessionStorage.getItem('access_token');
+            // Make a POST request to the server to create a loan
+            axios.post(`${MY_SERVER}/user/loans`, { BookID: bookId }, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+
+                    getLoans();
+                    getBooks();
+                    toastifyMessages('Book loaned successfully.', "linear-gradient(to right, #00b09b, #96c93d)", 7000);
+                    console.log('Loan added successfully:', response.data);
+                })
+                .catch(error => {
+                    if (error.response.status === 409 && error.response.data.message === 'A loan for this book already exists') {
+                        toastifyMessages('A loan for this book already exists.', "linear-gradient(to right, #ff4b2b, #ff416c)", 7000);
+                    }
+                    else {
+                        console.error('Error adding loan:', error);
+                    }
+                });
+
+        }
+
+        function returnLoan(loanId) {
+            const accessToken = sessionStorage.getItem('access_token');
+
+            // Make a DELETE request to the server to return the loan
+            axios.delete(`${MY_SERVER}/user/loans/${loanId}`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    getLoans();
+                    getBooks();
+                    toastifyMessages('Book returned successfully.', "linear-gradient(to right, #00b09b, #96c93d)", 7000);
+                    console.log('Loan returned successfully:', response.data);
+                })
+                .catch(error => {
+                    console.error('Error returning loan:', error);
+                });
+        }
+
+        function logout() {
+            sessionStorage.removeItem('access_token');
+            window.location.href = 'login.html?logout=true';
+        }
+
+        function toastifyMessages(toastText, toastColor, toastDuration) {
+            Toastify({
+                text: toastText,
+                gravity: "top",
+                position: "center",
+                duration: toastDuration,
+                style: {
+                    background: toastColor
+                },
+            }).showToast();
+        }
+
+        // Function to get the current user to check for login and welcome message
+        function getCurrentUser() {
+            const accessToken = sessionStorage.getItem('access_token');
+            if (!accessToken) {
+                // Redirect to login.html if not logged in
+                window.location.href = 'login.html?loginMessage=true';
+            }
+
+            axios.get(`${MY_SERVER}/user`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    document.getElementById('displayname').innerHTML = response.data.Name;
+                    if (response.data.is_admin == true) {
+                        document.getElementById('displayusername').innerHTML = "Admin " + response.data.Username;
+
+                        const adminButton = document.createElement('a');
+                        adminButton.href = 'menu.html';
+                        adminButton.className = 'btn btn-success btn-sm';
+                        adminButton.innerHTML = 'Admin Menu';
+
+                        adminButtons.appendChild(adminButton);
+                    }
+                    else {
+                        document.getElementById('displayusername').innerHTML = response.data.Username;
+                    }
+                })
+                .catch(error => {
+                    // If the request returns a 401, redirect to login.html
+                    if (error.response && error.response.status === 401) {
+                        window.location.href = 'login.html?loginMessage=true';
+                    } else {
+                        console.error('Error checking login status:', error);
+                    }
+                });
+
+        }
+
+        getCurrentUser();
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const loginMsg = urlParams.get('login');
+        if (loginMsg === 'true') {
+            // Show success message after successful login
+            toastifyMessages("Login Successful!", "linear-gradient(to right, #00b09b, #96c93d)", 5000);
+        }
+
+        const accessMsg = urlParams.get('denied');
+        if (accessMsg === 'true') {
+            // Show access denied message after trying to access an admin page as a regular user
+            toastifyMessages("Access Denied.", "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+        }
+    </script>
+</body>
+
+</html>

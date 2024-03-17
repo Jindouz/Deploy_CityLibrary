@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Night City Library</title>
+    <link rel="icon" type="image/x-icon" href="assets/icons/favicon2.png">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .navbar {
+            background-image: url('assets/icons/navbar.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            height: 110px;
+        }
+
+        .navbar-brand img {
+            margin-right: 10px;
+        }
+
+        body.modal-open {
+            overflow: auto !important;
+            padding-right: 12px !important;
+
+        }
+    </style>
+</head>
+
+<body class="container">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand d-flex align-items-center" href="menu.html" style="color: white;">
+                <img src="assets/icons/home2.jpg" alt="Library Logo" width="12%" class="d-inline-block align-text-top">
+                <span class="ms-2" style="font-size: 35px; font-weight: 500;">Night City Library</span>
+            </a>
+
+            <!-- Navbar Toggler (for smaller screens) -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon" style="font-size: 70%;"></span>
+            </button>
+
+            <!-- Navbar Items -->
+            <div class="collapse navbar-collapse" id="navbarNav" style="background-color: #000933; padding: 10px;">
+                <ul class="navbar-nav ms-auto">
+                    <div style="white-space: nowrap;">
+                        <h5 style="margin-right: 20px; display: inline-block;">Logged in as <span
+                                id="displayusername"></span></h5>
+                    </div>
+                    <li class="nav-item">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="logout()">Logout</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="text-center">
+        <div class="mt-3" style="display: flex; justify-content: space-between;">
+            <h3>Welcome <span id="displayname"></span>!</h3>
+            <div id="adminButtons" style="margin-right: 10px;"></div>
+        </div>
+    </div>
+
+    <h3 class="mt-4" style="text-align: center;">Book Manager</h3>
+    </div>
+
+    <br>
+    <!-- Add Book Section -->
+    <div class="row mt-2">
+        <div class="card col-md-5 mx-auto">
+            <div class="card-header" id="addBookSection">
+                <h3>Add a Book</h3>
+            </div>
+            <div class="card-body">
+                <form id="addBookForm">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name:</label>
+                        <input type="text" id="name" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="author" class="form-label">Author:</label>
+                        <input type="text" id="author" name="author" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="yearPublished" class="form-label">Year Published:</label>
+                        <input type="number" id="yearPublished" name="yearPublished" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="type" class="form-label">Loan Duration (Type):</label>
+                        <select id="type" name="type" class="form-select" required>
+                            <option value="1">10 Days</option>
+                            <option value="2">5 Days</option>
+                            <option value="3">2 Days</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Book Image (Optional):</label>
+                        <input type="file" id="image" name="image" class="form-control">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="addBook()">Add Book</button>
+                    <button type="button" class="btn btn-warning" onclick="clearFields()">Clear Fields</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <br>
+    <!-- Book List Section -->
+    <div class="row justify-content-center">
+        <div class="card col-md-8">
+            <div class="card-header">
+                <h3>Book List</h3>
+            </div>
+            <div class="col-md-11 mt-3 mx-auto">
+                <label for="searchBook" class="form-label">Search Book by Name:</label>
+                <input type="text" id="searchBook" class="form-control" oninput="searchBooks()">
+            </div>
+            <div class="card-body" id="booksDisplay">
+                <div class="row row-cols-2" id="booksRow"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Book Modal -->
+    <div class="modal fade" id="editBookModal" tabindex="-1" aria-labelledby="editBookModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editBookModalLabel">Edit Book</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editBookForm">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name:</label>
+                            <input type="text" id="editname" name="name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="author" class="form-label">Author:</label>
+                            <input type="text" id="editauthor" name="author" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="yearPublished" class="form-label">Year Published:</label>
+                            <input type="number" id="edityearPublished" name="yearPublished" class="form-control"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="type" class="form-label">Loan Duration (Type):</label>
+                            <select id="edittype" name="type" class="form-select" required>
+                                <option value="1">10 Days</option>
+                                <option value="2">5 Days</option>
+                                <option value="3">2 Days</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Book Image (Optional):</label>
+                            <input type="file" id="editimage" name="image" class="form-control">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" onclick="editBookForm()">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Confirmation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Deleting this Book will also delete its existing loans. Are you sure?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script>
+
+        MY_SERVER = "https://deploy-citylibrary.onrender.com"
+
+
+        // Global variable to store the selected book ID (mainly for editing)
+        selectedBookId = 0;
+        // Global variable for the edit book modal
+        const editBookModal = new bootstrap.Modal(document.getElementById('editBookModal'));
+
+        // GET all books
+        function getBooks(searchQuery) {
+            const accessToken = sessionStorage.getItem('access_token');
+
+            let apiUrl = `${MY_SERVER}/books`;
+
+            if (searchQuery) {
+                apiUrl += `?search=${searchQuery}`;
+            }
+
+            axios.get(apiUrl, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    const responseData = response.data;
+
+                    const books = responseData && responseData.books ? responseData.books : [];
+
+                    // Sort books by Id in descending order (newest at the top)
+                    books.sort((a, b) => b.Id - a.Id);
+                    const booksDiv = document.getElementById('booksRow');
+                    booksDiv.innerHTML = ''; // Clear the div before adding new content
+
+                    books.forEach(function (book) {
+                        // Create a Bootstrap card
+                        const card = document.createElement('div');
+                        card.className = 'card mb-3';
+
+                        // Card body
+                        const cardBody = document.createElement('div');
+                        cardBody.className = 'card-body d-flex';
+
+                        if (book.img_path == null) {
+                            book.img_path = 'frontend/assets/icons/default_book.jpg';
+                        }
+
+                        // Book image
+                        const bookImage = document.createElement('img');
+                        bookImage.src = `${MY_SERVER}/${book.img_path}`;
+                        bookImage.className = 'card-img-left';
+                        bookImage.style.maxWidth = '80px';
+                        cardBody.appendChild(bookImage);
+
+                        // Book details
+                        const bookDetails = document.createElement('div');
+                        bookDetails.className = 'ms-3';
+                        bookType = 0;
+                        if (book.Type == 1) {
+                            bookType = 10;
+                        } else if (book.Type == 2) {
+                            bookType = 5;
+                        } else if (book.Type == 3) {
+                            bookType = 2;
+                        }
+
+                        bookDetails.innerHTML = `<strong>Book Name:</strong> ${book.Name} (${book.YearPublished}) <br><strong>Author:</strong> ${book.Author} <br><strong>Loan Duration:</strong> ${bookType} Days`;
+
+                        // Buttons container
+                        const buttonsContainer = document.createElement('div');
+                        buttonsContainer.className = 'mb-2 d-flex justify-content-end';
+
+
+                        // Add delete button
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.className = "btn btn-danger btn-sm";
+                        deleteButton.style.marginRight = '5px';
+                        deleteButton.onclick = function () {
+                            deleteBook(book.Id);
+                        };
+                        buttonsContainer.appendChild(deleteButton);
+
+                        // Add edit button
+                        const editButton = document.createElement('button');
+                        editButton.textContent = 'Edit';
+                        editButton.className = 'btn btn-warning btn-sm';
+                        editButton.onclick = function () {
+                            editBookFields(book);
+                        };
+                        buttonsContainer.appendChild(editButton);
+
+                        // Append elements
+                        cardBody.appendChild(bookDetails);
+                        card.appendChild(cardBody);
+                        card.appendChild(buttonsContainer);
+                        booksDiv.appendChild(card);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching books:', error);
+                });
+        }
+
+        getBooks()
+
+        function searchBooks() {
+            const searchQuery = document.getElementById('searchBook').value.trim();
+            getBooks(searchQuery);
+        }
+
+        function addBook() {
+            const name = document.getElementById('name').value;
+            const author = document.getElementById('author').value;
+            const yearPublished = document.getElementById('yearPublished').value;
+            const type = document.getElementById('type').value;
+            const imageInput = document.getElementById('image');
+            const accessToken = sessionStorage.getItem('access_token');
+
+            if (!name || !author || !yearPublished || !type) {
+                // Empty fields, show error message
+                toastifyMessages('Please fill in all the required fields.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                return;
+            }
+
+            // image upload requires the content type to be "multipart/form-data" instead of json
+            const formData = new FormData();
+            formData.append('Name', name);
+            formData.append('Author', author);
+            formData.append('YearPublished', yearPublished);
+            formData.append('Type', type);
+            if (imageInput.files.length > 0) {
+                formData.append('img', imageInput.files[0]);
+            }
+
+            const imageFormData = new FormData();
+            imageFormData.append('image', imageInput.files[0]);
+
+            axios.post(`${MY_SERVER}/upload_image`, imageFormData, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'multipart/form-data',
+                },
+            })
+                .then(imageResponse => {
+                    const image_path = imageResponse.data.image_path;
+
+                    // Create a JSON object with the combined data
+                    const bookFormData = {
+                        Name: name,
+                        Author: author,
+                        YearPublished: yearPublished,
+                        Type: type,
+                        img_path: image_path,
+                    };
+
+                    // Send the combined data to the books endpoint
+                    axios.post(`${MY_SERVER}/books`, bookFormData, {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                    })
+                        .then(response => {
+                            toastifyMessages('Book added successfully.', "linear-gradient(to right, #00b09b, #96c93d)", 7000);
+                            console.log('Book added successfully:', response.data);
+                            // Reload books after adding a new one
+                            getBooks();
+                            clearFields();
+                        })
+                        .catch(error => {
+                            // If the request returns a 403, redirect to login.html
+                            if (error.response && error.response.status === 403) {
+                                toastifyMessages('You need to be an admin to add books.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                            } else {
+                                console.error('Error adding book:', error);
+                            }
+                        });
+                })
+                .catch(error => {
+                    // If the request returns a 403, redirect to login.html
+                    if (error.response && error.response.status === 409) {
+                        toastifyMessages('Invalid file extension. Supported extensions are png, jpg, and jpeg.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                    }
+                    else if (error.response && error.response.status === 413) {
+                        toastifyMessages('File size exceeds the allowed limit (10 MB).', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                    } else {
+                        console.error('Error uploading image:', error);
+                    }
+                });
+        }
+
+
+        // Function to handle the Edit Book button
+        function editBookForm() {
+            const name = document.getElementById('editname').value;
+            const author = document.getElementById('editauthor').value;
+            const yearPublished = document.getElementById('edityearPublished').value;
+            const type = document.getElementById('edittype').value;
+            const imageInput = document.getElementById('editimage');
+            const accessToken = sessionStorage.getItem('access_token');
+
+            if (!name || !author || !yearPublished || !type) {
+                // Empty fields, show error message
+                toastifyMessages('Please fill in all the required fields.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                return;
+            }
+
+            if (!selectedBookId) {
+                // No book selected for editing, show error message
+                toastifyMessages('Please select a book to edit.', 'linear-gradient(to right, #ff4b2b, #ff416c)', 5000);
+                return;
+            }
+
+            // image upload requires the content type to be "multipart/form-data" instead of json
+            const formData = new FormData();
+            formData.append('Name', name);
+            formData.append('Author', author);
+            formData.append('YearPublished', yearPublished);
+            formData.append('Type', type);
+            if (imageInput.files.length > 0) {
+                formData.append('img', imageInput.files[0]);
+            }
+
+            const imageFormData = new FormData();
+            imageFormData.append('image', imageInput.files[0]);
+
+            axios.post(`${MY_SERVER}/upload_image`, imageFormData, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'multipart/form-data',
+                },
+            })
+                .then(imageResponse => {
+                    const image_path = imageResponse.data.image_path;
+
+                    // Create a JSON object with the combined data
+                    const bookFormData = {
+                        Name: name,
+                        Author: author,
+                        YearPublished: yearPublished,
+                        Type: type,
+                        img_path: image_path,
+                    };
+
+                    // Use the selectedBookId when sending the request
+                    axios.put(`${MY_SERVER}/books/${selectedBookId}`, bookFormData, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    })
+                        .then(response => {
+                            toastifyMessages('Book updated successfully.', "linear-gradient(to right, #00b09b, #96c93d)", 7000);
+                            console.log('Book updated successfully:', response.data);
+                            // Reload the books after editing
+                            getBooks();
+                            editBookModal.hide();
+                        })
+                        .catch(error => {
+                            console.error('Error updating book:', error);
+                        });
+                })
+                .catch(error => {
+                    // If the request returns a 403, redirect to login.html
+                    if (error.response && error.response.status === 409) {
+                        toastifyMessages('Invalid file extension. Supported extensions are png, jpg, and jpeg.', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                    }
+                    else if (error.response && error.response.status === 413) {
+                        toastifyMessages('File size exceeds the allowed limit (10 MB).', "linear-gradient(to right, #ff4b2b, #ff416c)", 5000);
+                    } else {
+                        console.error('Error uploading image:', error);
+                    }
+                });
+        }
+
+        // Function to populate form fields for editing
+        function editBookFields(book) {
+            selectedBookId = book.Id;
+            document.getElementById('editname').value = book.Name;
+            document.getElementById('editauthor').value = book.Author;
+            document.getElementById('edityearPublished').value = book.YearPublished;
+            document.getElementById('edittype').value = book.Type;
+
+            // Show the edit book modal
+            editBookModal.show();
+        }
+
+        // Function to clear form fields
+        function clearFields() {
+            document.getElementById('name').value = '';
+            document.getElementById('author').value = '';
+            document.getElementById('yearPublished').value = '';
+            document.getElementById('type').value = '';
+            document.getElementById('image').value = '';
+        }
+
+        // An event listener to clear the edit image input when the modal is hidden (to avoid saving the previous image)
+        document.getElementById('editBookModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('editimage').value = '';
+        });
+
+        function deleteBook(bookId) {
+            const accessToken = sessionStorage.getItem('access_token');
+            // Display a delete confirmation dialog
+            const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+            confirmationModal.show();
+
+            // if confirmed delete
+            function confirmDelete() {
+                axios.delete(`${MY_SERVER}/books/${bookId}`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                })
+                    .then(response => {
+                        toastifyMessages('Book deleted successfully.', "linear-gradient(to right, #e8a400, #ffc257)", 7000);
+                        console.log('Book deleted successfully:', response.data);
+                        // Reload the books after deleting
+                        getBooks();
+                    })
+                    .catch(error => {
+                        console.error('Error deleting book:', error);
+                    });
+                confirmationModal.hide();
+            };
+            document.getElementById('confirmDelete').onclick = confirmDelete;
+        }
+
+        function logout() {
+            sessionStorage.removeItem('access_token');
+            window.location.href = 'login.html?logout=true';
+        }
+
+        // Function to display Toastify messages
+        function toastifyMessages(toastText, toastColor, toastDuration) {
+            Toastify({
+                text: toastText,
+                gravity: "top",
+                position: "center",
+                duration: toastDuration,
+                style: {
+                    background: toastColor
+                },
+            }).showToast();
+        }
+
+        // Function to get the current user to check for login, welcome message, and deny access if not admin
+        function getCurrentUser() {
+            const accessToken = sessionStorage.getItem('access_token');
+            if (!accessToken) {
+                // Redirect to login.html if not logged in
+                window.location.href = 'login.html?loginMessage=true';
+            }
+
+            axios.get(`${MY_SERVER}/user`, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            })
+                .then(response => {
+                    document.getElementById('displayname').innerHTML = response.data.Name;
+                    if (response.data.is_admin == true) {
+                        document.getElementById('displayusername').innerHTML = "Admin " + response.data.Username;
+                        const adminButton = document.createElement('a');
+                        adminButton.href = 'menu.html';
+                        adminButton.className = 'btn btn-success btn-sm';
+                        adminButton.innerHTML = 'Admin Menu';
+
+                        adminButtons.appendChild(adminButton);
+                    }
+                    else {
+                        window.location.href = 'index.html?denied=true';
+                    }
+                })
+                .catch(error => {
+                    // If the request returns a 401, redirect to login.html
+                    if (error.response && error.response.status === 401) {
+                        window.location.href = 'login.html?loginMessage=true';
+                    } else {
+                        console.error('Error checking login status:', error);
+                    }
+                });
+        }
+
+        getCurrentUser()
+
+    </script>
+</body>
+
+</html>
